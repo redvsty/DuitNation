@@ -1,10 +1,12 @@
+'use client';
+
 import GoalCard from '@/components/GoalCard';
 import { useGoals } from '@/hooks/useGoals';
 
 export default function GoalsPage() {
   const { goals, isLoading } = useGoals();
 
-  if (isLoading) return <p>Loading...</p>;
+  if (isLoading) return <p className="text-center">Loading...</p>;
 
   return (
     <div className="space-y-4">
@@ -14,6 +16,9 @@ export default function GoalsPage() {
           <GoalCard key={g.id} goal={g} />
         ))}
       </div>
+      {goals.length === 0 && (
+        <p className="text-center text-slate-400 py-8">No goals yet</p>
+      )}
     </div>
   );
 }

@@ -1,3 +1,5 @@
+'use client';
+
 import DashboardStats from '@/components/DashboardStats';
 import CashflowChart from '@/components/Charts/CashflowChart';
 import ExpensePieChart from '@/components/Charts/ExpensePieChart';
