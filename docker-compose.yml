@@ -10,11 +10,22 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U davan"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   auth-service:
     build: ./services/auth-service
@@ -22,11 +33,13 @@ services:
       - "3006:3006"
     environment:
       DATABASE_URL: postgresql://davan:Trinix%55@postgres:5432/auth
-      JWT_SECRET: your-secret-key
+      JWT_SECRET: your-secret-key-change-in-production
       REDIS_URL: redis://redis:6379
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   account-service:
     build: ./services/account-service
@@ -35,7 +48,8 @@ services:
     environment:
       DATABASE_URL: postgresql://davan:Trinix%55@postgres:5432/accounts
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   transaction-service:
     build: ./services/transaction-service
@@ -44,7 +58,8 @@ services:
     environment:
       DATABASE_URL: postgresql://davan:Trinix%55@postgres:5432/transactions
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   budget-service:
     build: ./services/budget-service
@@ -53,7 +68,8 @@ services:
     environment:
       DATABASE_URL: postgresql://davan:Trinix%55@postgres:5432/budgets
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   goal-service:
     build: ./services/goal-service
@@ -62,15 +78,16 @@ services:
     environment:
       DATABASE_URL: postgresql://davan:Trinix%55@postgres:5432/goals
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   analytics-service:
     build: ./services/analytics-service
     ports:
       - "3005:3005"
     environment:
-      TRANSACTION_SERVICE_URL: http://transaction-service:3002
-      ACCOUNT_SERVICE_URL: http://account-service:3001
+      TRANSACTION_SERVICE_URL: http://transaction-service:3002/api
+      ACCOUNT_SERVICE_URL: http://account-service:3001/api
     depends_on:
       - transaction-service
       - account-service
@@ -86,13 +103,20 @@ services:
       BUDGET_SERVICE_URL: http://budget-service:3003
       GOAL_SERVICE_URL: http://goal-service:3004
       ANALYTICS_SERVICE_URL: http://analytics-service:3005
+    depends_on:
+      - auth-service
+      - account-service
+      - transaction-service
+      - budget-service
+      - goal-service
+      - analytics-service
 
   frontend:
     build: ./frontend
     ports:
       - "3007:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api
     depends_on:
       - gateway
 

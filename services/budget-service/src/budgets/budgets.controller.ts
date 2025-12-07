@@ -7,16 +7,24 @@ import { UpdateBudgetDto } from './dto/update-budget.dto';
 export class BudgetsController {
   constructor(private readonly budgetsService: BudgetsService) {}
 
-  // (Opsional tapi wajar ada, walau di PDF hanya list GET/PATCH/DELETE)
   @Post()
   create(@Body() dto: CreateBudgetDto) {
     return this.budgetsService.create(dto);
   }
 
-  // GET /api/budgets
+  // GET /api/budgets?userId=...&month=...
   @Get()
   findAll(@Query('userId') userId?: string, @Query('month') month?: string) {
     return this.budgetsService.findAll({ userId, month });
+  }
+
+  // GET /api/budgets/progress?userId=...&month=YYYY-MM (harus sebelum :id)
+  @Get('progress')
+  getProgress(
+    @Query('userId') userId: string,
+    @Query('month') month: string,
+  ) {
+    return this.budgetsService.getProgress(userId, month);
   }
 
   // GET /api/budgets/:id
@@ -35,14 +43,5 @@ export class BudgetsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.budgetsService.remove(id);
-  }
-
-  // GET /api/budgets/progress?userId=...&month=YYYY-MM
-  @Get('progress')
-  getProgress(
-    @Query('userId') userId: string,
-    @Query('month') month: string,
-  ) {
-    return this.budgetsService.getProgress(userId, month);
   }
 }
