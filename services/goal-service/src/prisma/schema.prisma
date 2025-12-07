@@ -1,0 +1,10 @@
+model Goal {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  target    Decimal  @db.Decimal(15, 2)
+  current   Decimal  @db.Decimal(15, 2) @default(0)
+  deadline  DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

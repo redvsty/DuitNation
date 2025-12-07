@@ -1,0 +1,100 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: davan
+      POSTGRES_PASSWORD: Trinix%55
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  auth-service:
+    build: ./services/auth-service
+    ports:
+      - "3006:3006"
+    environment:
+      DATABASE_URL: postgresql://davan:Trinix%55@postgres:5432/auth
+      JWT_SECRET: your-secret-key
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  account-service:
+    build: ./services/account-service
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://davan:Trinix%55@postgres:5432/accounts
+    depends_on:
+      - postgres
+
+  transaction-service:
+    build: ./services/transaction-service
+    ports:
+      - "3002:3002"
+    environment:
+      DATABASE_URL: postgresql://davan:Trinix%55@postgres:5432/transactions
+    depends_on:
+      - postgres
+
+  budget-service:
+    build: ./services/budget-service
+    ports:
+      - "3003:3003"
+    environment:
+      DATABASE_URL: postgresql://davan:Trinix%55@postgres:5432/budgets
+    depends_on:
+      - postgres
+
+  goal-service:
+    build: ./services/goal-service
+    ports:
+      - "3004:3004"
+    environment:
+      DATABASE_URL: postgresql://davan:Trinix%55@postgres:5432/goals
+    depends_on:
+      - postgres
+
+  analytics-service:
+    build: ./services/analytics-service
+    ports:
+      - "3005:3005"
+    environment:
+      TRANSACTION_SERVICE_URL: http://transaction-service:3002
+      ACCOUNT_SERVICE_URL: http://account-service:3001
+    depends_on:
+      - transaction-service
+      - account-service
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "3000:3000"
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:3006
+      ACCOUNT_SERVICE_URL: http://account-service:3001
+      TRANSACTION_SERVICE_URL: http://transaction-service:3002
+      BUDGET_SERVICE_URL: http://budget-service:3003
+      GOAL_SERVICE_URL: http://goal-service:3004
+      ANALYTICS_SERVICE_URL: http://analytics-service:3005
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3007:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    depends_on:
+      - gateway
+
+volumes:
+  postgres_data:

@@ -1,0 +1,12 @@
+model Budget {
+  id         String   @id @default(uuid())
+  userId     String
+  categoryId String
+  month      String   // YYYY-MM
+  limit      Decimal  @db.Decimal(15, 2)
+  spent      Decimal  @db.Decimal(15, 2) @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, categoryId, month])
+}
