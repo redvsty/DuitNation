@@ -1,7 +1,9 @@
 version: '3.8'
+
 services:
   postgres:
     image: postgres:15
+    container_name: money-postgres
     environment:
       POSTGRES_USER: davan
       POSTGRES_PASSWORD: Trinix%55
@@ -16,9 +18,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - money-network
+    restart: unless-stopped
 
   redis:
     image: redis:7
+    container_name: money-redis
     ports:
       - "6379:6379"
     healthcheck:
@@ -26,23 +32,31 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - money-network
+    restart: unless-stopped
 
   auth-service:
     build: ./services/auth-service
+    container_name: auth-service
     ports:
       - "3006:3006"
     environment:
       DATABASE_URL: postgresql://davan:Trinix%55@postgres:5432/auth
-      JWT_SECRET: your-secret-key-change-in-production
+      JWT_SECRET: your-secret-key-change-in-production-please
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - money-network
+    restart: unless-stopped
 
   account-service:
     build: ./services/account-service
+    container_name: account-service
     ports:
       - "3001:3001"
     environment:
@@ -50,9 +64,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - money-network
+    restart: unless-stopped
 
   transaction-service:
     build: ./services/transaction-service
+    container_name: transaction-service
     ports:
       - "3002:3002"
     environment:
@@ -60,9 +78,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - money-network
+    restart: unless-stopped
 
   budget-service:
     build: ./services/budget-service
+    container_name: budget-service
     ports:
       - "3003:3003"
     environment:
@@ -70,9 +92,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - money-network
+    restart: unless-stopped
 
   goal-service:
     build: ./services/goal-service
+    container_name: goal-service
     ports:
       - "3004:3004"
     environment:
@@ -80,9 +106,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - money-network
+    restart: unless-stopped
 
   analytics-service:
     build: ./services/analytics-service
+    container_name: analytics-service
     ports:
       - "3005:3005"
     environment:
@@ -91,34 +121,47 @@ services:
     depends_on:
       - transaction-service
       - account-service
+    networks:
+      - money-network
+    restart: unless-stopped
 
   gateway:
     build: ./gateway
+    container_name: api-gateway
     ports:
       - "3000:3000"
     environment:
-      AUTH_SERVICE_URL: http://auth-service:3006
       ACCOUNT_SERVICE_URL: http://account-service:3001
       TRANSACTION_SERVICE_URL: http://transaction-service:3002
       BUDGET_SERVICE_URL: http://budget-service:3003
       GOAL_SERVICE_URL: http://goal-service:3004
       ANALYTICS_SERVICE_URL: http://analytics-service:3005
     depends_on:
-      - auth-service
       - account-service
       - transaction-service
       - budget-service
       - goal-service
       - analytics-service
+    networks:
+      - money-network
+    restart: unless-stopped
 
   frontend:
     build: ./frontend
+    container_name: money-frontend
     ports:
       - "3007:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:3000/api
     depends_on:
       - gateway
+    networks:
+      - money-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+
+networks:
+  money-network:
+    driver: bridge
