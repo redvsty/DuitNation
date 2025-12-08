@@ -9,7 +9,7 @@ RUN npm install
 COPY . .
 
 # Generate Prisma Client
-RUN npx prisma generate
+RUN npx prisma generate --schema=src/prisma/schema.prisma
 
 # Build application
 RUN npm run build
@@ -27,7 +27,7 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/src/prisma ./src/prisma
 
 # Generate Prisma Client in production
-RUN npx prisma generate
+RUN npx prisma generate --schema=src/prisma/schema.prisma
 
 EXPOSE 3001
 

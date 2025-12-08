@@ -4,7 +4,9 @@
     "scripts": {
       "start": "nest start",
       "start:dev": "nest start --watch",
-      "build": "nest build"
+      "build": "nest build",
+      "prisma:migrate": "npx prisma migrate dev --schema=src/prisma/schema.prisma",
+      "prisma:generate": "npx prisma generate --schema=src/prisma/schema.prisma"
     },
     "dependencies": {
       "@nestjs/common": "^10.0.0",
