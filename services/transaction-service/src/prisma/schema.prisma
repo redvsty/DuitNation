@@ -14,7 +14,7 @@ model Transaction {
   categoryId         String
   type               String
   amount             Decimal  @db.Decimal(15, 2)
-  description        String
+  description        String?
   date               DateTime
   recurring          Boolean  @default(false)
   recurringFrequency String?
@@ -23,7 +23,7 @@ model Transaction {
 }
 
 model Category {
-  id     String @id @default(uuid())
+  id     String  @id @default(uuid())
   name   String
   type   String
   icon   String

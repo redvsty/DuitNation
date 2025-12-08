@@ -1,4 +1,4 @@
-import { IsBoolean, IsDateString, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDateString, IsNotEmpty, IsOptional, IsString, IsIn } from 'class-validator';
 
 export class CreateTransactionDto {
   @IsString()
@@ -14,7 +14,7 @@ export class CreateTransactionDto {
   categoryId: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsIn(['income', 'expense'])
   type: 'income' | 'expense';
 
   @IsString()
@@ -26,6 +26,7 @@ export class CreateTransactionDto {
   description?: string;
 
   @IsDateString()
+  @IsNotEmpty()
   date: string;
 
   @IsBoolean()

@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine3.18 AS builder
 WORKDIR /app
 
 # Copy package files
@@ -15,7 +15,7 @@ RUN npx prisma generate --schema=src/prisma/schema.prisma
 RUN npm run build
 
 # Production stage
-FROM node:20-alpine
+FROM node:20-alpine3.18
 WORKDIR /app
 
 # Copy built assets
@@ -27,7 +27,7 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/src/prisma ./src/prisma
 
 # Generate Prisma Client in production
-RUN npx prisma generate --schema=src/prisma/schema.prisma
+# RUN npx prisma generate --schema=src/prisma/schema.prisma
 
 EXPOSE 3001
 

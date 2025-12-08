@@ -4,9 +4,10 @@ import { Account } from '@/types';
 
 interface AccountCardProps {
   account: Account;
+  onUpdate?: () => void;
 }
 
-export default function AccountCard({ account }: AccountCardProps) {
+export default function AccountCard({ account, onUpdate }: AccountCardProps) {
   const formatBalance = (balance: string) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -17,8 +18,9 @@ export default function AccountCard({ account }: AccountCardProps) {
 
   return (
     <div 
-      className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 hover:bg-slate-900 transition-colors"
+      className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 hover:bg-slate-900 transition-colors cursor-pointer"
       style={{ borderLeftColor: account.color, borderLeftWidth: '4px' }}
+      onClick={onUpdate}
     >
       <div className="flex justify-between items-start mb-3">
         <div>
