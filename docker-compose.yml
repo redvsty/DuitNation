@@ -23,10 +23,12 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:7
+    image: redis:7-alpine
     container_name: money-redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -37,7 +39,9 @@ services:
     restart: unless-stopped
 
   auth-service:
-    build: ./services/auth-service
+    build: 
+      context: ./services/auth-service
+      dockerfile: Dockerfile
     container_name: auth-service
     ports:
       - "3006:3006"
@@ -45,22 +49,32 @@ services:
       DATABASE_URL: ${AUTH_DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       REDIS_URL: ${REDIS_URL}
+      NODE_ENV: production
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006/api/auth/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       - duitnation
     restart: unless-stopped
 
   account-service:
-    build: ./services/account-service
+    build: 
+      context: ./services/account-service
+      dockerfile: Dockerfile
     container_name: account-service
     ports:
       - "3001:3001"
     environment:
       DATABASE_URL: ${ACCOUNTS_DATABASE_URL}
+      NODE_ENV: production
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,12 +83,15 @@ services:
     restart: unless-stopped
 
   transaction-service:
-    build: ./services/transaction-service
+    build: 
+      context: ./services/transaction-service
+      dockerfile: Dockerfile
     container_name: transaction-service
     ports:
       - "3002:3002"
     environment:
       DATABASE_URL: ${TRANSACTIONS_DATABASE_URL}
+      NODE_ENV: production
     depends_on:
       postgres:
         condition: service_healthy
@@ -83,12 +100,15 @@ services:
     restart: unless-stopped
 
   budget-service:
-    build: ./services/budget-service
+    build: 
+      context: ./services/budget-service
+      dockerfile: Dockerfile
     container_name: budget-service
     ports:
       - "3003:3003"
     environment:
       DATABASE_URL: ${BUDGETS_DATABASE_URL}
+      NODE_ENV: production
     depends_on:
       postgres:
         condition: service_healthy
@@ -97,12 +117,15 @@ services:
     restart: unless-stopped
 
   goal-service:
-    build: ./services/goal-service
+    build: 
+      context: ./services/goal-service
+      dockerfile: Dockerfile
     container_name: goal-service
     ports:
       - "3004:3004"
     environment:
       DATABASE_URL: ${GOALS_DATABASE_URL}
+      NODE_ENV: production
     depends_on:
       postgres:
         condition: service_healthy
@@ -111,14 +134,16 @@ services:
     restart: unless-stopped
 
   analytics-service:
-    build: ./services/analytics-service
+    build: 
+      context: ./services/analytics-service
+      dockerfile: Dockerfile
     container_name: analytics-service
     ports:
       - "3005:3005"
     environment:
-      # butuh URL yang sudah /api
       TRANSACTION_SERVICE_URL: ${TRANSACTION_SERVICE_API_URL}
       ACCOUNT_SERVICE_URL: ${ACCOUNT_SERVICE_API_URL}
+      NODE_ENV: production
     depends_on:
       - transaction-service
       - account-service
@@ -127,7 +152,9 @@ services:
     restart: unless-stopped
 
   gateway:
-    build: ./gateway
+    build: 
+      context: ./gateway
+      dockerfile: Dockerfile
     container_name: api-gateway
     ports:
       - "3000:3000"
@@ -138,6 +165,7 @@ services:
       GOAL_SERVICE_URL: ${GOAL_SERVICE_URL}
       ANALYTICS_SERVICE_URL: ${ANALYTICS_SERVICE_URL}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      NODE_ENV: production
     depends_on:
       - account-service
       - transaction-service
@@ -150,12 +178,15 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: money-frontend
     ports:
       - "3007:3000"
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NODE_ENV: production
     depends_on:
       - gateway
     networks:
@@ -164,6 +195,9 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
+    driver: local
 
 networks:
   duitnation:
