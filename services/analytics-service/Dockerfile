@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine3.18 AS builder
 WORKDIR /app
 
 # Copy package files
@@ -12,14 +12,17 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:20-alpine
+FROM node:20-alpine3.18
 WORKDIR /app
+
+# Install curl for healthcheck
+RUN apk add --no-cache curl wget
 
 # Copy built assets
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 
-EXPOSE 3001
+EXPOSE 3005
 
 CMD ["node", "dist/main.js"]

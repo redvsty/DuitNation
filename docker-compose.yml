@@ -59,8 +59,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:3006/api/auth/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 60s
     networks:
       - duitnation
     restart: unless-stopped
@@ -78,6 +78,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/accounts"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - duitnation
     restart: unless-stopped
@@ -95,6 +101,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/api/transactions"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - duitnation
     restart: unless-stopped
@@ -112,6 +124,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003/api/budgets"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - duitnation
     restart: unless-stopped
@@ -129,6 +147,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3004/api/goals"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - duitnation
     restart: unless-stopped
@@ -145,8 +169,16 @@ services:
       ACCOUNT_SERVICE_URL: ${ACCOUNT_SERVICE_API_URL}
       NODE_ENV: production
     depends_on:
-      - transaction-service
-      - account-service
+      transaction-service:
+        condition: service_healthy
+      account-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3005/api/analytics/summary?userId=test"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - duitnation
     restart: unless-stopped
@@ -167,12 +199,24 @@ services:
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
       NODE_ENV: production
     depends_on:
-      - account-service
-      - transaction-service
-      - budget-service
-      - goal-service
-      - analytics-service
-      - auth-service
+      auth-service:
+        condition: service_healthy
+      account-service:
+        condition: service_healthy
+      transaction-service:
+        condition: service_healthy
+      budget-service:
+        condition: service_healthy
+      goal-service:
+        condition: service_healthy
+      analytics-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/auth/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - duitnation
     restart: unless-stopped
@@ -185,10 +229,11 @@ services:
     ports:
       - "3007:3000"
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api
       NODE_ENV: production
     depends_on:
-      - gateway
+      gateway:
+        condition: service_healthy
     networks:
       - duitnation
     restart: unless-stopped
