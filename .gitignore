@@ -1,0 +1,9 @@
+.env
+frontend/node_modules
+gateway/node_modules
+services/account-service/node_modules
+services/analytics-service/node_modules
+services/auth-service/node_modules
+services/budget-service/node_modules
+services/goal-service/node_modules
+services/transaction-service/node_modules
