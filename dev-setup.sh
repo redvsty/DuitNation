@@ -40,7 +40,7 @@ echo "✅ All dependencies installed"
 # Start Docker containers
 echo ""
 echo "🐳 Starting Docker containers..."
-docker-compose up -d postgres redis
+docker compose up -d postgres redis
 
 echo "⏳ Waiting for PostgreSQL to be ready..."
 sleep 10
@@ -78,5 +78,5 @@ echo "  3. Start Frontend:"
 echo "     cd frontend && npm run dev"
 echo ""
 echo "Or use Docker Compose:"
-echo "  docker-compose up --build"
+echo "  docker compose up --build"
 echo ""
