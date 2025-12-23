@@ -15,6 +15,7 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,33 +31,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      if (token) {
-        const response = await apiClient.get('/auth/me');
-        setUser(response.data);
+      if (!token) {
+        setIsLoading(false);
+        return;
       }
+
+      const response = await apiClient.get('/auth/me');
+      setUser(response.data);
     } catch (error) {
+      console.error('Auth check failed:', error);
       clearTokens();
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
   };
 
   const login = async (email: string, password: string) => {
-    const response = await apiClient.post('/auth/login', { email, password });
-    const { user, accessToken, refreshToken } = response.data;
-    
-    setAuthToken(accessToken);
-    setRefreshToken(refreshToken);
-    setUser(user);
+    try {
+      const response = await apiClient.post('/auth/login', { email, password });
+      const { user, accessToken, refreshToken } = response.data;
+      
+      setAuthToken(accessToken);
+      setRefreshToken(refreshToken);
+      setUser(user);
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
+    }
   };
 
   const register = async (email: string, password: string, name: string) => {
-    const response = await apiClient.post('/auth/register', { email, password, name });
-    const { user, accessToken, refreshToken } = response.data;
-    
-    setAuthToken(accessToken);
-    setRefreshToken(refreshToken);
-    setUser(user);
+    try {
+      const response = await apiClient.post('/auth/register', { email, password, name });
+      const { user, accessToken, refreshToken } = response.data;
+      
+      setAuthToken(accessToken);
+      setRefreshToken(refreshToken);
+      setUser(user);
+    } catch (error) {
+      console.error('Registration failed:', error);
+      throw error;
+    }
   };
 
   const logout = async () => {
@@ -70,8 +86,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const response = await apiClient.get('/auth/me');
+      setUser(response.data);
+    } catch (error) {
+      console.error('Refresh user failed:', error);
+      clearTokens();
+      setUser(null);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',
@@ -6,15 +6,16 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 seconds
 });
 
 // Request interceptor - add auth token
 apiClient.interceptors.request.use(
-  (config) => {
+  (config: InternalAxiosRequestConfig) => {
     // Get token from localStorage if exists
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('accessToken');
-      if (token) {
+      if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
@@ -23,37 +24,85 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Flag to prevent multiple refresh attempts
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: any) => void;
+  reject: (reason?: any) => void;
+}> = [];
+
+const processQueue = (error: any = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve();
+    }
+  });
+  failedQueue = [];
+};
+
 // Response interceptor - handle errors globally
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as any;
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     // Handle 401 errors (token expired)
     if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(() => {
+            return apiClient(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
 
       try {
         // Try to refresh token
         const refreshToken = localStorage.getItem('refreshToken');
-        if (refreshToken) {
-          const response = await axios.post(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-            { refreshToken }
-          );
-
-          const { accessToken } = response.data;
-          localStorage.setItem('accessToken', accessToken);
-
-          // Retry original request
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-          return apiClient(originalRequest);
+        if (!refreshToken) {
+          throw new Error('No refresh token available');
         }
+
+        const response = await axios.post(
+          `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+          { refreshToken }
+        );
+
+        const { accessToken } = response.data;
+        localStorage.setItem('accessToken', accessToken);
+
+        // Update authorization header
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        }
+
+        processQueue(null);
+        isRefreshing = false;
+
+        // Retry original request
+        return apiClient(originalRequest);
       } catch (refreshError) {
         // Refresh failed, logout user
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        processQueue(refreshError);
+        isRefreshing = false;
+        
+        clearTokens();
+        
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        
+        return Promise.reject(refreshError);
       }
     }
 
@@ -63,18 +112,27 @@ apiClient.interceptors.response.use(
 
 // Helper functions
 export const setAuthToken = (token: string) => {
-  localStorage.setItem('accessToken', token);
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('accessToken', token);
+  }
 };
 
 export const setRefreshToken = (token: string) => {
-  localStorage.setItem('refreshToken', token);
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('refreshToken', token);
+  }
 };
 
 export const clearTokens = () => {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+  }
 };
 
 export const getAccessToken = () => {
-  return localStorage.getItem('accessToken');
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('accessToken');
+  }
+  return null;
 };

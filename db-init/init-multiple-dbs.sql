@@ -1,10 +1,18 @@
--- Create all databases for the microservices
-CREATE DATABASE accounts;
-CREATE DATABASE transactions;
-CREATE DATABASE budgets;
-CREATE DATABASE goals;
-CREATE DATABASE auth;
-CREATE DATABASE analytics;
+-- Create all databases for the microservices if they don't exist
+SELECT 'CREATE DATABASE accounts'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'accounts')\gexec
+
+SELECT 'CREATE DATABASE transactions'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'transactions')\gexec
+
+SELECT 'CREATE DATABASE budgets'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'budgets')\gexec
+
+SELECT 'CREATE DATABASE goals'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'goals')\gexec
+
+SELECT 'CREATE DATABASE auth'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'auth')\gexec
 
 -- Connect to accounts database and create extension if needed
 \c accounts;

@@ -2,7 +2,7 @@
 
 Aplikasi money management dengan arsitektur microservices menggunakan NestJS, PostgreSQL, Redis, dan Next.js.
 
-## Struktur Proyek
+## 🏗️ Struktur Proyek
 
 ```
 ├── services/
@@ -18,51 +18,23 @@ Aplikasi money management dengan arsitektur microservices menggunakan NestJS, Po
 └── docker-compose.yml
 ```
 
-## Prerequisites
+## 📋 Prerequisites
 
 - Docker & Docker Compose
 - Node.js 20+ (untuk development lokal)
 - PostgreSQL 15
 - Redis 7
 
-## Setup & Installation
+## 🚀 Quick Start
 
-### 1. Clone dan Install Dependencies (Local Development)
-
-```bash
-# Install dependencies untuk setiap service
-cd services/account-service && npm install
-cd ../transaction-service && npm install
-cd ../budget-service && npm install
-cd ../goal-service && npm install
-cd ../analytics-service && npm install
-cd ../auth-service && npm install
-cd ../../gateway && npm install
-cd ../frontend && npm install
-```
-
-### 2. Setup Database dengan Prisma
+### 1. Setup Environment Variables
 
 ```bash
-# Untuk setiap service yang menggunakan Prisma
-cd services/account-service
-npx prisma generate
-npx prisma migrate dev --name init
-
-cd ../transaction-service
-npx prisma generate
-npx prisma migrate dev --name init
-
-cd ../budget-service
-npx prisma generate
-npx prisma migrate dev --name init
-
-cd ../goal-service
-npx prisma generate
-npx prisma migrate dev --name init
+cp .env.example .env
+# Edit .env file with your credentials
 ```
 
-### 3. Run dengan Docker Compose
+### 2. Run with Docker Compose (Recommended)
 
 ```bash
 # Build dan run semua services
@@ -74,11 +46,51 @@ docker-compose up -d --build
 # Lihat logs
 docker-compose logs -f
 
+# Lihat logs service tertentu
+docker-compose logs -f auth-service
+
 # Stop semua services
 docker-compose down
+
+# Stop dan hapus volumes (reset database)
+docker-compose down -v
 ```
 
-## Database Schema
+### 3. Development Setup (Local)
+
+```bash
+# Run setup script
+chmod +x dev-setup.sh
+./dev-setup.sh
+
+# Or manual setup:
+# Install dependencies untuk setiap service
+cd services/account-service && npm install
+cd ../transaction-service && npm install
+cd ../budget-service && npm install
+cd ../goal-service && npm install
+cd ../analytics-service && npm install
+cd ../auth-service && npm install
+cd ../../gateway && npm install
+cd ../frontend && npm install
+```
+
+### 4. Database Migrations
+
+```bash
+# Run migration script
+chmod +x migrate-all.sh
+./migrate-all.sh
+
+# Or migrate individual service
+cd services/account-service
+npx prisma generate --schema=src/prisma/schema.prisma
+npx prisma migrate dev --name init --schema=src/prisma/schema.prisma
+# Or for quick development:
+npx prisma db push --schema=src/prisma/schema.prisma
+```
+
+## 🗄️ Database Schema
 
 ### Account Service
 - **Database**: `accounts`
@@ -98,9 +110,23 @@ docker-compose down
 - **Database**: `goals`
 - **Table**: Goal (id, userId, name, target, current, deadline)
 
-## API Endpoints
+### Auth Service
+- **Database**: `auth`
+- **Tables**:
+  - User (id, email, password, name)
+  - RefreshToken (id, userId, token, expiresAt)
+
+## 🔌 API Endpoints
 
 ### Gateway: http://localhost:3000/api
+
+#### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `POST /api/auth/refresh` - Refresh access token
+- `POST /api/auth/logout` - Logout user
+- `GET /api/auth/me` - Get current user profile
+- `GET /api/auth/health` - Health check
 
 #### Accounts
 - `GET /api/accounts` - List semua accounts
@@ -142,41 +168,18 @@ docker-compose down
 - `GET /api/analytics/trends?userId=...&months=6` - Trend analysis
 - `GET /api/analytics/comparison?userId=...&from=YYYY-MM&to=YYYY-MM` - Period comparison
 
-## Frontend Pages
+## 🖥️ Frontend Pages
 
 - `/` - Home page
+- `/login` - Login page
+- `/register` - Registration page
 - `/dashboard` - Dashboard with stats and charts
 - `/accounts` - List semua accounts
 - `/transactions` - List semua transactions
 - `/budgets` - Budget tracking
 - `/goals` - Financial goals tracking
 
-## Environment Variables
-
-### Services
-Setiap service membutuhkan `DATABASE_URL`:
-```env
-DATABASE_URL=postgresql://davan:Trinix%55@postgres:5432/[database_name]
-```
-
-### Auth Service
-```env
-JWT_SECRET=your-secret-key-change-in-production
-REDIS_URL=redis://redis:6379
-```
-
-### Analytics Service
-```env
-TRANSACTION_SERVICE_URL=http://transaction-service:3002/api
-ACCOUNT_SERVICE_URL=http://account-service:3001/api
-```
-
-### Frontend
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
-```
-
-## Development
+## 🔧 Development
 
 ### Run Service Individually (Local)
 
@@ -201,6 +204,10 @@ npm run start:dev
 cd services/analytics-service
 npm run start:dev
 
+# Auth Service
+cd services/auth-service
+npm run start:dev
+
 # Gateway
 cd gateway
 npm run start:dev
@@ -210,17 +217,24 @@ cd frontend
 npm run dev
 ```
 
-## Troubleshooting
+## 🐛 Troubleshooting
 
 ### Database Connection Error
+
 ```bash
 # Reset database
 docker-compose down -v
 docker-compose up -d postgres
-# Wait for postgres to be ready, then run migrations
+
+# Wait for postgres to be ready (check logs)
+docker-compose logs -f postgres
+
+# Run migrations again
+./migrate-all.sh
 ```
 
 ### Port Already in Use
+
 ```bash
 # Stop semua containers
 docker-compose down
@@ -232,39 +246,126 @@ lsof -i :3001
 
 # Kill process if needed
 kill -9 [PID]
+
+# On Windows
+netstat -ano | findstr :3000
+taskkill /PID [PID] /F
 ```
 
 ### Prisma Client Error
+
 ```bash
 cd services/[service-name]
-npx prisma generate
+npx prisma generate --schema=src/prisma/schema.prisma
 npm run build
 ```
 
-## Testing
+### Container Health Check Failing
 
 ```bash
-# Test API dengan curl
-curl http://localhost:3000/api/accounts
-curl http://localhost:3000/api/transactions
-curl http://localhost:3000/api/budgets
-curl http://localhost:3000/api/goals
+# Check container logs
+docker-compose logs [service-name]
 
-# Create sample data
-curl -X POST http://localhost:3000/api/accounts \
-  -H "Content-Type: application/json" \
-  -d '{"userId":"user1","name":"Bank BCA","type":"bank","balance":"5000000","color":"#3b82f6"}'
+# Check container health status
+docker inspect --format='{{json .State.Health}}' [container-name]
+
+# Restart specific service
+docker-compose restart [service-name]
 ```
 
-## Tech Stack
+### Frontend Build Error
+
+```bash
+cd frontend
+rm -rf .next node_modules
+npm install
+npm run build
+```
+
+### CORS Error
+
+Pastikan environment variable `NEXT_PUBLIC_API_URL` di frontend sudah benar:
+- Development: `http://localhost:3000/api`
+- Production: Sesuaikan dengan URL production
+
+## 🧪 Testing
+
+### Test API dengan curl
+
+```bash
+# Register user
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password123","name":"Test User"}'
+
+# Login
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password123"}'
+
+# Create account (with token)
+curl -X POST http://localhost:3000/api/accounts \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -d '{"userId":"user-id","name":"Bank BCA","type":"bank","balance":"5000000","color":"#3b82f6"}'
+```
+
+## 📊 Monitoring
+
+### Check Service Health
+
+```bash
+# Check all services
+curl http://localhost:3000/api/auth/health
+curl http://localhost:3001/api/accounts
+curl http://localhost:3002/api/transactions
+curl http://localhost:3003/api/budgets
+curl http://localhost:3004/api/goals
+curl http://localhost:3005/api/analytics/summary?userId=test
+
+# Check container stats
+docker stats
+```
+
+## 🔐 Security Notes
+
+⚠️ **Important**: Sebelum deploy ke production:
+
+1. Change `JWT_SECRET` di `.env`
+2. Use strong passwords untuk database
+3. Enable HTTPS
+4. Set proper CORS origins
+5. Add rate limiting
+6. Enable database SSL
+7. Use secrets management (e.g., AWS Secrets Manager)
+
+## 🚢 Production Deployment
+
+```bash
+# Build for production
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+
+# Or deploy to cloud (AWS, GCP, Azure, etc.)
+```
+
+## 📝 Tech Stack
 
 - **Backend**: NestJS, Prisma ORM, PostgreSQL
 - **Cache**: Redis
 - **Frontend**: Next.js 14, React 18, TailwindCSS
 - **Charts**: Recharts
 - **API Client**: Axios
+- **Authentication**: JWT, Passport
 - **Containerization**: Docker, Docker Compose
 
-## License
+## 📄 License
 
 MIT
+
+## 👥 Contributing
+
+Pull requests are welcome! For major changes, please open an issue first.
+
+## 📞 Support
+
+For issues and questions, please open an issue on GitHub.
